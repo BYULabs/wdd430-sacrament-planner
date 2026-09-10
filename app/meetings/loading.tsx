@@ -1,6 +1,6 @@
 export default function MeetingsLoading() {
   return (
-    <div className="space-y-8 animate-pulse">
+    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 space-y-8 animate-pulse">
       {/* Header Skeleton */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-slate-200 pb-6">
         <div className="space-y-3">
