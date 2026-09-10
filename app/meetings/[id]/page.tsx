@@ -1,8 +1,9 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
-import { getMeetingById } from '@/lib/meetings-db';
 import { MeetingDetail } from '@/components/MeetingDetail';
+import type { SacramentMeeting } from '@/lib/types';
+import { headers } from 'next/headers';
 
 interface MeetingPageProps {
   params: Promise<{
@@ -12,21 +13,25 @@ interface MeetingPageProps {
 
 export default async function MeetingDetailPage({ params }: MeetingPageProps) {
   const resolvedParams = await params;
-  const meetingId = parseInt(resolvedParams.id, 10);
+  const meetingId = resolvedParams.id;
 
-  if (isNaN(meetingId)) {
+  // Resolve base host URL dynamically for Server Components
+  const headersList = await headers();
+  const host = headersList.get('host') || 'localhost:3000';
+  const protocol = process.env.NODE_ENV === 'development' ? 'http' : 'https';
+
+  const res = await fetch(`${protocol}://${host}/api/meetings/${meetingId}`, {
+    cache: 'no-store',
+  });
+
+  if (!res.ok) {
     notFound();
   }
 
-  const meeting = getMeetingById(meetingId);
-
-  if (!meeting) {
-    notFound();
-  }
+  const meeting: SacramentMeeting = await res.json();
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 space-y-6">
-      {/* Navigation Breadcrumb */}
       <div>
         <Link
           href="/meetings"
@@ -37,7 +42,6 @@ export default async function MeetingDetailPage({ params }: MeetingPageProps) {
         </Link>
       </div>
 
-      {/* Agenda Detail Component */}
       <MeetingDetail meeting={meeting} />
     </div>
   );
