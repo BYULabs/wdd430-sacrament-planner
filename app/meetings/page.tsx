@@ -1,19 +1,37 @@
 'use client';
 
-import { useState } from 'react';
-import { getMeetings } from '@/lib/meetings-db';
+import { useState, useEffect } from 'react';
 import { MeetingCard } from '@/components/MeetingCard';
-import type { MeetingType } from '@/lib/types';
+import type { SacramentMeeting, MeetingType } from '@/lib/types';
 import { Calendar, Filter } from 'lucide-react';
 
 export default function MeetingsPage() {
-  const allMeetings = getMeetings();
+  const [meetings, setMeetings] = useState<SacramentMeeting[]>([]);
+  const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<MeetingType | 'all'>('all');
+
+  useEffect(() => {
+    async function fetchMeetings() {
+      try {
+        const response = await fetch('/api/meetings');
+        if (response.ok) {
+          const data: SacramentMeeting[] = await response.json();
+          setMeetings(data);
+        }
+      } catch (error) {
+        console.error('Failed to load meetings:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchMeetings();
+  }, []);
 
   const filteredMeetings =
     selectedType === 'all'
-      ? allMeetings
-      : allMeetings.filter((m) => m.meetingType === selectedType);
+      ? meetings
+      : meetings.filter((m) => m.meetingType === selectedType);
 
   const filterOptions: { label: string; value: MeetingType | 'all' }[] = [
     { label: 'All Meetings', value: 'all' },
@@ -25,7 +43,7 @@ export default function MeetingsPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 space-y-8">
-      {/* Header & Section Description */}
+      {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between border-b border-slate-200 pb-6">
         <div>
           <p className="eyebrow">Sacrament Planner</p>
@@ -38,14 +56,13 @@ export default function MeetingsPage() {
           </p>
         </div>
 
-        {/* Quick Total Count Badge */}
         <div className="flex items-center gap-2 self-start rounded-lg bg-navy-50 px-3 py-2 text-xs font-semibold text-navy-800 ring-1 ring-navy-200">
           <Calendar className="h-4 w-4 text-navy-600" />
           <span>{filteredMeetings.length} Services Listed</span>
         </div>
       </div>
 
-      {/* Filter Tabs */}
+      {/* Filter Options */}
       <div className="flex flex-wrap items-center gap-2">
         <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 mr-2">
           <Filter className="h-3.5 w-3.5" />
@@ -67,8 +84,12 @@ export default function MeetingsPage() {
         ))}
       </div>
 
-      {/* Meetings Grid */}
-      {filteredMeetings.length > 0 ? (
+      {/* Render Cards Grid */}
+      {loading ? (
+        <div className="text-center py-12 text-slate-500 text-sm">
+          Loading meeting programs...
+        </div>
+      ) : filteredMeetings.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {filteredMeetings.map((meeting) => (
             <MeetingCard key={meeting.id} meeting={meeting} />
