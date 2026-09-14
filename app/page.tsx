@@ -5,8 +5,9 @@ import { getMeetings } from '@/lib/meetings-db';
 import { MeetingCard } from '@/components/MeetingCard';
 import { MeetingDetail } from '@/components/MeetingDetail';
 
-export default function HomePage() {
-  const meetings = getMeetings();
+export default async function HomePage() {
+  // Await the async database query
+  const meetings = await getMeetings();
 
   // Slice to show only the 3 most immediate upcoming meetings on the home page
   const upcomingMeetings = meetings.slice(0, 3);
