@@ -1,45 +1,19 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { getMeetings, getMeetingsTotalPages } from '@/lib/meetings-db';
+import { MeetingSearch } from '@/components/MeetingSearch';
 import { MeetingCard } from '@/components/MeetingCard';
-import type { SacramentMeeting, MeetingType } from '@/lib/types';
-import { Calendar, Filter } from 'lucide-react';
+import { Calendar } from 'lucide-react';
 
-export default function MeetingsPage() {
-  const [meetings, setMeetings] = useState<SacramentMeeting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [selectedType, setSelectedType] = useState<MeetingType | 'all'>('all');
+export default async function MeetingsPage(props: {
+  searchParams?: Promise<{ query?: string; page?: string }>;
+}) {
+  const searchParams = await props.searchParams;
+  const query = searchParams?.query ?? '';
+  const currentPage = Number(searchParams?.page) || 1;
 
-  useEffect(() => {
-    async function fetchMeetings() {
-      try {
-        const response = await fetch('/api/meetings');
-        if (response.ok) {
-          const data: SacramentMeeting[] = await response.json();
-          setMeetings(data);
-        }
-      } catch (error) {
-        console.error('Failed to load meetings:', error);
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchMeetings();
-  }, []);
-
-  const filteredMeetings =
-    selectedType === 'all'
-      ? meetings
-      : meetings.filter((m) => m.meetingType === selectedType);
-
-  const filterOptions: { label: string; value: MeetingType | 'all' }[] = [
-    { label: 'All Meetings', value: 'all' },
-    { label: 'Regular', value: 'regular' },
-    { label: 'Testimony', value: 'testimony' },
-    { label: 'Stake', value: 'stake' },
-    { label: 'General', value: 'general' },
-  ];
+  const [meetings, totalPages] = await Promise.all([
+    getMeetings(query, currentPage),
+    getMeetingsTotalPages(query),
+  ]);
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-12 space-y-8">
@@ -58,40 +32,19 @@ export default function MeetingsPage() {
 
         <div className="flex items-center gap-2 self-start rounded-lg bg-navy-50 px-3 py-2 text-xs font-semibold text-navy-800 ring-1 ring-navy-200">
           <Calendar className="h-4 w-4 text-navy-600" />
-          <span>{filteredMeetings.length} Services Listed</span>
+          <span>{meetings.length} Services Listed</span>
         </div>
       </div>
 
-      {/* Filter Options */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-400 mr-2">
-          <Filter className="h-3.5 w-3.5" />
-          Filter:
-        </span>
-        {filterOptions.map((option) => (
-          <button
-            key={option.value}
-            type="button"
-            onClick={() => setSelectedType(option.value)}
-            className={`rounded-full px-4 py-1.5 text-xs font-semibold transition cursor-pointer ${
-              selectedType === option.value
-                ? 'bg-navy-900 text-white shadow-sm'
-                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
-            }`}
-          >
-            {option.label}
-          </button>
-        ))}
+      {/* Controls Bar: Search */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <MeetingSearch />
       </div>
 
       {/* Render Cards Grid */}
-      {loading ? (
-        <div className="text-center py-12 text-slate-500 text-sm">
-          Loading meeting programs...
-        </div>
-      ) : filteredMeetings.length > 0 ? (
+      {meetings.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {filteredMeetings.map((meeting) => (
+          {meetings.map((meeting) => (
             <MeetingCard key={meeting.id} meeting={meeting} />
           ))}
         </div>
@@ -101,7 +54,7 @@ export default function MeetingsPage() {
             No meetings found
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            There are no services scheduled for the selected meeting type.
+            There are no services matching your query.
           </p>
         </div>
       )}
