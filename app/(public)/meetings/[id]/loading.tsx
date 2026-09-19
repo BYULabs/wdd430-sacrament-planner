@@ -1,4 +1,3 @@
-// loading.tsx
 import { ArrowLeft } from 'lucide-react';
 
 export default function MeetingDetailLoading() {
