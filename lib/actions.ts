@@ -94,7 +94,12 @@ function parseMeetingForm(formData: FormData) {
 export async function createMeeting(formData: FormData) {
   const data = parseMeetingForm(formData);
 
-  await db.addMeeting(data);
+  try {
+    await db.addMeeting(data);
+  } catch (error) {
+    console.error('Error creating meeting:', error);
+    throw new Error('Failed to create meeting. Please try again later.');
+  }
 
   revalidatePath('/meetings');
   redirect('/meetings');
@@ -104,7 +109,13 @@ export async function updateMeeting(id: number, formData: FormData) {
   const meetingId = MeetingIdSchema.parse(id);
   const data = parseMeetingForm(formData);
 
-  const updated = await db.updateMeeting(meetingId, data);
+  let updated;
+  try {
+    updated = await db.updateMeeting(meetingId, data);
+  } catch (error) {
+    console.error(`Error updating meeting ${meetingId}:`, error);
+    throw new Error('Failed to update meeting. Please try again later.');
+  }
   if (!updated) {
     throw new Error(`Meeting ${meetingId} not found.`);
   }
@@ -117,7 +128,12 @@ export async function updateMeeting(id: number, formData: FormData) {
 export async function deleteMeeting(id: number) {
   const meetingId = MeetingIdSchema.parse(id);
 
-  await db.deleteMeeting(meetingId);
+  try {
+    await db.deleteMeeting(meetingId);
+  } catch (error) {
+    console.error(`Error deleting meeting ${meetingId}:`, error);
+    throw new Error('Failed to delete meeting. Please try again later.');
+  }
 
   revalidatePath('/meetings');
 }
