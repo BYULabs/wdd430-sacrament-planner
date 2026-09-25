@@ -31,3 +31,26 @@ export interface SacramentMeeting {
   closingHymn: Hymn;
   closingPrayer: string;
 }
+
+// Raw meeting form input, keyed by field name, so a failed submission can be
+// re-rendered with what the user typed.
+export interface MeetingFormValues {
+  date: string;
+  meetingType: string;
+  presiding: string;
+  conducting: string;
+  openingPrayer: string;
+  closingPrayer: string;
+  openingHymnNumber: string;
+  openingHymnTitle: string;
+  sacramentHymnNumber: string;
+  sacramentHymnTitle: string;
+  closingHymnNumber: string;
+  closingHymnTitle: string;
+  speakers: SpeakerItem[];
+  announcements: string;
+  wardBusiness: string;
+  stakeBusiness: boolean;
+}
+
+export type MeetingField = keyof MeetingFormValues;
