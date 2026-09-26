@@ -1,19 +1,28 @@
 'use client';
 
-import { useState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useActionState, useState } from 'react';
 import Link from 'next/link';
 import { Plus, Trash2 } from 'lucide-react';
-import type { Hymn, SacramentMeeting, SpeakerItem } from '../lib/types';
+import type { State } from '../lib/actions';
+import type {
+  MeetingField,
+  MeetingFormValues,
+  SacramentMeeting,
+  SpeakerItem,
+} from '../lib/types';
 
 interface MeetingFormProps {
-  action: (formData: FormData) => void | Promise<void>;
+  action: (prevState: State, formData: FormData) => Promise<State>;
   meeting?: SacramentMeeting;
   submitLabel: string;
 }
 
+type Errors = State['errors'];
+
+const initialState: State = { message: null, errors: {} };
+
 const inputClass =
-  'mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-200';
+  'mt-1 block w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:border-navy-500 focus:outline-none focus:ring-2 focus:ring-navy-200 aria-invalid:border-red-400';
 const labelClass = 'block text-sm font-semibold text-slate-700';
 const sectionClass =
   'space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-card sm:p-6';
@@ -29,61 +38,130 @@ const toRow = (speaker: SpeakerItem): SpeakerRow => ({
 });
 const emptySpeaker = (): SpeakerRow =>
   toRow({ name: '', topic: '', type: 'speaker' });
+const toRows = (speakers: SpeakerItem[]): SpeakerRow[] =>
+  speakers.length ? speakers.map(toRow) : [emptySpeaker()];
+
+function toFormValues(meeting?: SacramentMeeting): MeetingFormValues {
+  return {
+    date: meeting?.date ?? '',
+    meetingType: meeting?.meetingType ?? 'regular',
+    presiding: meeting?.presiding ?? '',
+    conducting: meeting?.conducting ?? '',
+    openingPrayer: meeting?.openingPrayer ?? '',
+    closingPrayer: meeting?.closingPrayer ?? '',
+    openingHymnNumber: String(meeting?.openingHymn.number ?? ''),
+    openingHymnTitle: meeting?.openingHymn.title ?? '',
+    sacramentHymnNumber: String(meeting?.sacramentHymn.number ?? ''),
+    sacramentHymnTitle: meeting?.sacramentHymn.title ?? '',
+    closingHymnNumber: String(meeting?.closingHymn.number ?? ''),
+    closingHymnTitle: meeting?.closingHymn.title ?? '',
+    speakers: meeting?.speakers ?? [],
+    announcements: meeting?.announcements?.join('\n') ?? '',
+    wardBusiness:
+      meeting?.wardBusiness.map((b) => b.description).join('\n') ?? '',
+    stakeBusiness: meeting?.stakeBusiness ?? false,
+  };
+}
+
+// Live region beneath a field; screen readers announce errors as they change.
+function FieldError({ id, errors }: { id: string; errors?: string[] }) {
+  return (
+    <div id={id} aria-live="polite" aria-atomic="true">
+      {errors?.map((error) => (
+        <p key={error} className="mt-1 text-sm text-red-600">
+          {error}
+        </p>
+      ))}
+    </div>
+  );
+}
+
+function TextField({
+  name,
+  label,
+  values,
+  errors,
+}: {
+  name: MeetingField;
+  label: string;
+  values: MeetingFormValues;
+  errors: Errors;
+}) {
+  return (
+    <div>
+      <label htmlFor={name} className={labelClass}>
+        {label}
+      </label>
+      <input
+        id={name}
+        name={name}
+        required
+        minLength={2}
+        defaultValue={values[name] as string}
+        aria-describedby={`${name}-error`}
+        aria-invalid={errors?.[name] ? true : undefined}
+        className={inputClass}
+      />
+      <FieldError id={`${name}-error`} errors={errors?.[name]} />
+    </div>
+  );
+}
 
 function HymnFields({
   prefix,
   label,
-  hymn,
+  values,
+  errors,
 }: {
-  prefix: string;
+  prefix: 'openingHymn' | 'sacramentHymn' | 'closingHymn';
   label: string;
-  hymn?: Hymn;
+  values: MeetingFormValues;
+  errors: Errors;
 }) {
+  const numberField = `${prefix}Number` as const;
+  const titleField = `${prefix}Title` as const;
+
   return (
     <fieldset className="grid grid-cols-[6rem_1fr] gap-3">
       <legend className={`${labelClass} col-span-2`}>{label}</legend>
       <div>
-        <label htmlFor={`${prefix}Number`} className="sr-only">
+        <label htmlFor={numberField} className="sr-only">
           {label} number
         </label>
         <input
-          id={`${prefix}Number`}
-          name={`${prefix}Number`}
+          id={numberField}
+          name={numberField}
           type="number"
           min={1}
           required
           placeholder="No."
-          defaultValue={hymn?.number}
+          defaultValue={values[numberField]}
+          aria-describedby={`${numberField}-error`}
+          aria-invalid={errors?.[numberField] ? true : undefined}
           className={inputClass}
+        />
+        <FieldError
+          id={`${numberField}-error`}
+          errors={errors?.[numberField]}
         />
       </div>
       <div>
-        <label htmlFor={`${prefix}Title`} className="sr-only">
+        <label htmlFor={titleField} className="sr-only">
           {label} title
         </label>
         <input
-          id={`${prefix}Title`}
-          name={`${prefix}Title`}
+          id={titleField}
+          name={titleField}
           required
           placeholder="Hymn title"
-          defaultValue={hymn?.title}
+          defaultValue={values[titleField]}
+          aria-describedby={`${titleField}-error`}
+          aria-invalid={errors?.[titleField] ? true : undefined}
           className={inputClass}
         />
+        <FieldError id={`${titleField}-error`} errors={errors?.[titleField]} />
       </div>
     </fieldset>
-  );
-}
-
-function SubmitButton({ label }: { label: string }) {
-  const { pending } = useFormStatus();
-  return (
-    <button
-      type="submit"
-      disabled={pending}
-      className="inline-flex items-center gap-2 rounded-lg bg-navy-800 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-navy-900 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
-    >
-      {pending ? 'Saving…' : label}
-    </button>
   );
 }
 
@@ -92,12 +170,24 @@ export function MeetingForm({
   meeting,
   submitLabel,
 }: MeetingFormProps) {
+  const [state, formAction, isPending] = useActionState(action, initialState);
+  const values = state.values ?? toFormValues(meeting);
+  const errors = state.errors;
+
   const [speakers, setSpeakers] = useState<SpeakerRow[]>(() =>
-    meeting?.speakers.length ? meeting.speakers.map(toRow) : [emptySpeaker()]
+    toRows(values.speakers)
   );
 
+  // React resets the form after each submission; rebuild the speaker rows from
+  // what was submitted so a failed attempt keeps the user's input.
+  const [submittedValues, setSubmittedValues] = useState(state.values);
+  if (state.values !== submittedValues) {
+    setSubmittedValues(state.values);
+    if (state.values) setSpeakers(toRows(state.values.speakers));
+  }
+
   return (
-    <form action={action} className="space-y-6">
+    <form action={formAction} className="space-y-6">
       {/* Meeting Details */}
       <section className={sectionClass}>
         <h2 className={sectionTitleClass}>Meeting Details</h2>
@@ -111,9 +201,12 @@ export function MeetingForm({
               name="date"
               type="date"
               required
-              defaultValue={meeting?.date}
+              defaultValue={values.date}
+              aria-describedby="date-error"
+              aria-invalid={errors?.date ? true : undefined}
               className={inputClass}
             />
+            <FieldError id="date-error" errors={errors?.date} />
           </div>
           <div>
             <label htmlFor="meetingType" className={labelClass}>
@@ -123,7 +216,9 @@ export function MeetingForm({
               id="meetingType"
               name="meetingType"
               required
-              defaultValue={meeting?.meetingType ?? 'regular'}
+              defaultValue={values.meetingType}
+              aria-describedby="meetingType-error"
+              aria-invalid={errors?.meetingType ? true : undefined}
               className={inputClass}
             >
               <option value="regular">Regular</option>
@@ -131,59 +226,32 @@ export function MeetingForm({
               <option value="stake">Stake Conference</option>
               <option value="general">General Conference</option>
             </select>
+            <FieldError id="meetingType-error" errors={errors?.meetingType} />
           </div>
-          <div>
-            <label htmlFor="presiding" className={labelClass}>
-              Presiding
-            </label>
-            <input
-              id="presiding"
-              name="presiding"
-              required
-              minLength={2}
-              defaultValue={meeting?.presiding}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="conducting" className={labelClass}>
-              Conducting
-            </label>
-            <input
-              id="conducting"
-              name="conducting"
-              required
-              minLength={2}
-              defaultValue={meeting?.conducting}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="openingPrayer" className={labelClass}>
-              Invocation
-            </label>
-            <input
-              id="openingPrayer"
-              name="openingPrayer"
-              required
-              minLength={2}
-              defaultValue={meeting?.openingPrayer}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor="closingPrayer" className={labelClass}>
-              Benediction
-            </label>
-            <input
-              id="closingPrayer"
-              name="closingPrayer"
-              required
-              minLength={2}
-              defaultValue={meeting?.closingPrayer}
-              className={inputClass}
-            />
-          </div>
+          <TextField
+            name="presiding"
+            label="Presiding"
+            values={values}
+            errors={errors}
+          />
+          <TextField
+            name="conducting"
+            label="Conducting"
+            values={values}
+            errors={errors}
+          />
+          <TextField
+            name="openingPrayer"
+            label="Invocation"
+            values={values}
+            errors={errors}
+          />
+          <TextField
+            name="closingPrayer"
+            label="Benediction"
+            values={values}
+            errors={errors}
+          />
         </div>
       </section>
 
@@ -193,17 +261,20 @@ export function MeetingForm({
         <HymnFields
           prefix="openingHymn"
           label="Opening hymn"
-          hymn={meeting?.openingHymn}
+          values={values}
+          errors={errors}
         />
         <HymnFields
           prefix="sacramentHymn"
           label="Sacrament hymn"
-          hymn={meeting?.sacramentHymn}
+          values={values}
+          errors={errors}
         />
         <HymnFields
           prefix="closingHymn"
           label="Closing hymn"
-          hymn={meeting?.closingHymn}
+          values={values}
+          errors={errors}
         />
       </section>
 
@@ -227,44 +298,38 @@ export function MeetingForm({
             className="grid gap-3 sm:grid-cols-[1fr_1fr_10rem_auto] sm:items-end"
           >
             <div>
-              <label
-                htmlFor={`speakerName-${speaker.key}`}
-                className={labelClass}
-              >
+              <label htmlFor={`speakerName-${idx}`} className={labelClass}>
                 Name
               </label>
               <input
-                id={`speakerName-${speaker.key}`}
+                id={`speakerName-${idx}`}
                 name="speakerName"
                 defaultValue={speaker.name}
+                aria-describedby="speakers-error"
                 className={inputClass}
               />
             </div>
             <div>
-              <label
-                htmlFor={`speakerTopic-${speaker.key}`}
-                className={labelClass}
-              >
+              <label htmlFor={`speakerTopic-${idx}`} className={labelClass}>
                 Topic / piece
               </label>
               <input
-                id={`speakerTopic-${speaker.key}`}
+                id={`speakerTopic-${idx}`}
                 name="speakerTopic"
                 defaultValue={speaker.topic}
+                aria-describedby="speakers-error"
                 className={inputClass}
               />
             </div>
             <div>
-              <label
-                htmlFor={`speakerType-${speaker.key}`}
-                className={labelClass}
-              >
+              <label htmlFor={`speakerType-${idx}`} className={labelClass}>
                 Type
               </label>
               <select
-                id={`speakerType-${speaker.key}`}
+                id={`speakerType-${idx}`}
                 name="speakerType"
                 defaultValue={speaker.type}
+                aria-describedby="speakers-error"
                 className={inputClass}
               >
                 <option value="speaker">Speaker</option>
@@ -283,6 +348,7 @@ export function MeetingForm({
             </button>
           </div>
         ))}
+        <FieldError id="speakers-error" errors={errors?.speakers} />
         <p className="text-xs text-slate-500">Rows with no name are ignored.</p>
       </section>
 
@@ -298,9 +364,12 @@ export function MeetingForm({
             name="announcements"
             rows={3}
             placeholder="One announcement per line"
-            defaultValue={meeting?.announcements?.join('\n')}
+            defaultValue={values.announcements}
+            aria-describedby="announcements-error"
+            aria-invalid={errors?.announcements ? true : undefined}
             className={inputClass}
           />
+          <FieldError id="announcements-error" errors={errors?.announcements} />
         </div>
         <div>
           <label htmlFor="wardBusiness" className={labelClass}>
@@ -311,22 +380,38 @@ export function MeetingForm({
             name="wardBusiness"
             rows={3}
             placeholder="One item per line"
-            defaultValue={meeting?.wardBusiness
-              .map((b) => b.description)
-              .join('\n')}
+            defaultValue={values.wardBusiness}
+            aria-describedby="wardBusiness-error"
+            aria-invalid={errors?.wardBusiness ? true : undefined}
             className={inputClass}
           />
+          <FieldError id="wardBusiness-error" errors={errors?.wardBusiness} />
         </div>
-        <label className="flex items-center gap-2 text-sm text-slate-700">
-          <input
-            type="checkbox"
-            name="stakeBusiness"
-            defaultChecked={meeting?.stakeBusiness}
-            className="h-4 w-4 rounded border-slate-300 text-navy-700"
-          />
-          Stake business will be presented
-        </label>
+        <div>
+          <div className="flex items-center gap-2">
+            <input
+              id="stakeBusiness"
+              name="stakeBusiness"
+              type="checkbox"
+              defaultChecked={values.stakeBusiness}
+              aria-describedby="stakeBusiness-error"
+              className="h-4 w-4 rounded border-slate-300 text-navy-700"
+            />
+            <label htmlFor="stakeBusiness" className="text-sm text-slate-700">
+              Stake business will be presented
+            </label>
+          </div>
+          <FieldError id="stakeBusiness-error" errors={errors?.stakeBusiness} />
+        </div>
       </section>
+
+      <div aria-live="polite" aria-atomic="true">
+        {state.message ? (
+          <p className="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-700">
+            {state.message}
+          </p>
+        ) : null}
+      </div>
 
       <div className="flex items-center justify-end gap-3">
         <Link
@@ -335,7 +420,13 @@ export function MeetingForm({
         >
           Cancel
         </Link>
-        <SubmitButton label={submitLabel} />
+        <button
+          type="submit"
+          disabled={isPending}
+          className="inline-flex items-center gap-2 rounded-lg bg-navy-800 px-5 py-2.5 text-sm font-semibold text-white shadow-soft transition hover:bg-navy-900 disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+        >
+          {isPending ? 'Saving…' : submitLabel}
+        </button>
       </div>
     </form>
   );
