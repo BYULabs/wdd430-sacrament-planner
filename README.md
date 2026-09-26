@@ -6,15 +6,16 @@ Bishopric members can capture a complete program — presiding and conducting le
 
 ## Tech Stack
 
-| Layer     | Technology                                           |
-| --------- | ---------------------------------------------------- |
-| Framework | Next.js 16 (App Router, React 19, Server Components) |
-| Language  | TypeScript (strict)                                  |
-| Database  | Postgres on Neon, via `@neondatabase/serverless`     |
-| Styling   | Tailwind CSS v4 with custom navy theme tokens        |
-| Icons     | `lucide-react`                                       |
-| Fonts     | Inter, loaded through `next/font/google`             |
-| Tooling   | ESLint (`eslint-config-next`), Prettier              |
+| Layer      | Technology                                           |
+| ---------- | ---------------------------------------------------- |
+| Framework  | Next.js 16 (App Router, React 19, Server Components) |
+| Language   | TypeScript (strict)                                  |
+| Database   | Postgres on Neon, via `@neondatabase/serverless`     |
+| Styling    | Tailwind CSS v4 with custom navy theme tokens        |
+| Validation | Zod schemas in Server Actions                        |
+| Icons      | `lucide-react`                                       |
+| Fonts      | Inter, loaded through `next/font/google`             |
+| Tooling    | ESLint (`eslint-config-next`), Prettier              |
 
 ## Features
 
@@ -22,7 +23,9 @@ Bishopric members can capture a complete program — presiding and conducting le
 - **Meetings directory** — paginated grid (6 per page) with debounced search across presiding, conducting, meeting type, and speaker names.
 - **Meeting detail** — full program layout with print-optimized styles so an agenda fits a single page.
 - **Current meeting shortcut** — `/meetings/current` resolves to today's meeting or the next upcoming one.
-- **Create a meeting** — a Server Action writes new programs straight to Postgres, with a `useFormStatus`-driven pending state.
+- **Create and edit meetings** — one shared `MeetingForm` backed by Server Actions and `useActionState`. Input is validated with Zod on the server; field errors are shown inline and the user's input is kept after a failed submit.
+- **Delete meetings** — a Delete button on each meeting card asks for confirmation, then calls a Server Action.
+- **Error handling** — `error.tsx` boundaries for the meetings routes, a dedicated not-found page for editing a meeting that doesn't exist, and database errors reported back to the form.
 - **REST API** — JSON endpoints for meetings, suitable for external consumers.
 - **Accessibility** — skip link, visible focus rings, `aria-current` navigation, and `prefers-reduced-motion` support.
 
@@ -97,19 +100,20 @@ Open [http://localhost:3000](http://localhost:3000).
 app/
   (public)/            Member-facing routes
     about/             Project overview page
-    meetings/          Directory, detail, current-meeting redirect, loading states
+    meetings/          Directory, detail, current-meeting redirect, loading and error states
   (admin)/             Bishopric routes
     meetings/new/      Create-a-meeting form
-    meetings/[id]/edit Edit form (in progress)
+    meetings/[id]/edit Edit form, with its own not-found page
+    meetings/error.tsx Error boundary shared with the public meetings routes
   api/meetings/        REST endpoints
   layout.tsx           Root layout: header, footer, skip link, fonts
   globals.css          Tailwind theme tokens and print styles
 components/            Header, Footer, NavLinks, MeetingCard, MeetingDetail,
-                       MeetingSearch, Pagination, MeetingForm, FormSubmitButton
+                       MeetingSearch, Pagination, MeetingForm, DeleteMeetingButton
 lib/
-  types.ts             SacramentMeeting, Hymn, SpeakerItem, WardBusinessItem
-  meetings-db.ts       SQL queries against Neon
-  actions.ts           Server Actions (form parsing, validation, revalidation)
+  types.ts             SacramentMeeting, Hymn, SpeakerItem, WardBusinessItem, MeetingFormValues
+  meetings-db.ts       SQL queries against Neon (read, create, update, delete)
+  actions.ts           Server Actions: createMeeting, updateMeeting, deleteMeeting
 ```
 
 Route groups `(public)` and `(admin)` separate member-facing pages from bishopric tools without affecting URLs.
@@ -123,7 +127,7 @@ Route groups `(public)` and `(admin)` separate member-facing pages from bishopri
 | `/meetings/current`   | Redirects to today's or the next upcoming meeting    |
 | `/meetings/[id]`      | Full program detail, print-optimized                 |
 | `/meetings/new`       | Create a new meeting program                         |
-| `/meetings/[id]/edit` | Edit an existing meeting (in progress)               |
+| `/meetings/[id]/edit` | Edit an existing meeting                             |
 | `/about`              | Project background and technical summary             |
 
 ## API
@@ -147,7 +151,7 @@ Returns a single meeting. Responds `400` for a non-numeric id and `404` when no 
 
 ## Status
 
-Reading, searching, pagination, and creating meetings are complete. Editing and deleting are still in development — `updateMeeting` and `deleteMeeting` in [lib/meetings-db.ts](lib/meetings-db.ts) currently throw, and the edit page renders a placeholder.
+Reading, searching, pagination, creating, editing, and deleting meetings are complete. There is no authentication yet, so the create, edit, and delete controls are available to every visitor.
 
 ## License
 

@@ -1,6 +1,7 @@
 import Link from 'next/link';
-import { Calendar, Clock, Music, Mic, ArrowRight } from 'lucide-react';
+import { Calendar, Clock, Music, Mic, ArrowRight, Pencil } from 'lucide-react';
 import type { SacramentMeeting } from '../lib/types';
+import { DeleteMeetingButton } from './DeleteMeetingButton';
 
 interface MeetingCardProps {
   meeting: SacramentMeeting;
@@ -110,11 +111,23 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
       {/* Detail Link CTA */}
       <Link
         href={`/meetings/${meeting.id}`}
-        className="group/link flex items-center justify-center gap-2 rounded-b-2xl border-t border-slate-100 bg-stone-50/60 px-4 py-3 sm:px-5 sm:py-3.5 text-xs sm:text-sm font-semibold text-navy-700 transition hover:bg-navy-50 hover:text-navy-800"
+        className="group/link flex items-center justify-center gap-2 border-t border-slate-100 bg-stone-50/60 px-4 py-3 sm:px-5 sm:py-3.5 text-xs sm:text-sm font-semibold text-navy-700 transition hover:bg-navy-50 hover:text-navy-800"
       >
         View Full Program
         <ArrowRight className="h-4 w-4 shrink-0 transition-transform group-hover/link:translate-x-0.5" />
       </Link>
+
+      {/* Admin Actions */}
+      <div className="flex divide-x divide-slate-100 border-t border-slate-100">
+        <Link
+          href={`/meetings/${meeting.id}/edit`}
+          className="flex flex-1 items-center justify-center gap-1.5 px-4 py-3 text-xs sm:text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-navy-800"
+        >
+          <Pencil className="h-4 w-4" />
+          Edit
+        </Link>
+        <DeleteMeetingButton id={meeting.id} />
+      </div>
     </article>
   );
 }
