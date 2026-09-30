@@ -1,3 +1,4 @@
+import { auth } from '@/auth';
 import { getMeetings, getMeetingsTotalPages } from '@/lib/meetings-db';
 import { MeetingSearch } from '@/components/MeetingSearch';
 import { MeetingCard } from '@/components/MeetingCard';
@@ -11,9 +12,10 @@ export default async function MeetingsPage(props: {
   const query = searchParams?.query ?? '';
   const currentPage = Number(searchParams?.page) || 1;
 
-  const [meetings, totalPages] = await Promise.all([
+  const [meetings, totalPages, session] = await Promise.all([
     getMeetings(query, currentPage),
     getMeetingsTotalPages(query),
+    auth(),
   ]);
 
   return (
@@ -46,7 +48,11 @@ export default async function MeetingsPage(props: {
       {meetings.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {meetings.map((meeting) => (
-            <MeetingCard key={meeting.id} meeting={meeting} />
+            <MeetingCard
+              key={meeting.id}
+              meeting={meeting}
+              canManage={!!session?.user}
+            />
           ))}
         </div>
       ) : (
