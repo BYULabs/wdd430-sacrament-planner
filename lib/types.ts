@@ -54,3 +54,12 @@ export interface MeetingFormValues {
 }
 
 export type MeetingField = keyof MeetingFormValues;
+
+// A row from the users table. passwordHash is a bcrypt hash and never leaves
+// the server.
+export interface User {
+  id: number;
+  name: string;
+  email: string;
+  passwordHash: string;
+}
