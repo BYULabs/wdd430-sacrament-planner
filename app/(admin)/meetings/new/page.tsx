@@ -1,5 +1,11 @@
+import type { Metadata } from 'next';
 import { MeetingForm } from '@/components/MeetingForm';
 import { createMeeting } from '@/lib/actions';
+
+export const metadata: Metadata = {
+  title: 'Create Meeting',
+  description: 'Schedule a new sacrament meeting program.',
+};
 
 export default function NewMeetingPage() {
   return (

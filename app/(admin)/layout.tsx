@@ -1,11 +1,10 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Create Meeting · Oakridge Ward Planner',
-  description: 'Schedule a new sacrament meeting program.',
+  robots: { index: false, follow: false },
 };
 
-export default function NewMeetingLayout({
+export default function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
