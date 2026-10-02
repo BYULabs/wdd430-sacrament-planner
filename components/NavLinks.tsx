@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Calendar, Info } from 'lucide-react';
+import { Home, Calendar, Info, Plus } from 'lucide-react';
 
 const navItems = [
   { name: 'Home', href: '/', icon: Home },
@@ -10,13 +10,18 @@ const navItems = [
   { name: 'About', href: '/about', icon: Info },
 ];
 
-export function NavLinks() {
+const adminNavItems = [
+  { name: 'New Meeting', href: '/meetings/new', icon: Plus },
+];
+
+export function NavLinks({ isSignedIn }: { isSignedIn: boolean }) {
   const pathname = usePathname();
+  const items = isSignedIn ? [...navItems, ...adminNavItems] : navItems;
 
   return (
     <nav aria-label="Primary" className="border-t border-navy-800/70">
       <div className="flex flex-wrap items-center gap-1 py-2">
-        {navItems.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const isActive = pathname === item.href;
 

@@ -1,13 +1,13 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowRight, ChevronRight, Sun, CalendarDays } from 'lucide-react';
+import { auth } from '@/auth';
 import { getMeetings } from '@/lib/meetings-db';
 import { MeetingCard } from '@/components/MeetingCard';
 import { MeetingDetail } from '@/components/MeetingDetail';
 
 export default async function HomePage() {
-  // Await the async database query
-  const meetings = await getMeetings();
+  const [meetings, session] = await Promise.all([getMeetings(), auth()]);
 
   // Slice to show only the 3 most immediate upcoming meetings on the home page
   const upcomingMeetings = meetings.slice(0, 3);
@@ -92,7 +92,11 @@ export default async function HomePage() {
           {/* Grid optimized for 3 items */}
           <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {upcomingMeetings.map((meeting) => (
-              <MeetingCard key={meeting.id} meeting={meeting} />
+              <MeetingCard
+                key={meeting.id}
+                meeting={meeting}
+                canManage={!!session?.user}
+              />
             ))}
           </div>
 

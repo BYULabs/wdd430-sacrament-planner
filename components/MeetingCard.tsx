@@ -5,6 +5,8 @@ import { DeleteMeetingButton } from './DeleteMeetingButton';
 
 interface MeetingCardProps {
   meeting: SacramentMeeting;
+  // Show the Edit and Delete controls (signed-in bishopric only).
+  canManage?: boolean;
 }
 
 const badgeStyles: Record<SacramentMeeting['meetingType'], string> = {
@@ -14,7 +16,7 @@ const badgeStyles: Record<SacramentMeeting['meetingType'], string> = {
   general: 'badge-general',
 };
 
-export function MeetingCard({ meeting }: MeetingCardProps) {
+export function MeetingCard({ meeting, canManage = false }: MeetingCardProps) {
   const formattedDate = new Date(`${meeting.date}T00:00:00`).toLocaleDateString(
     'en-US',
     {
@@ -118,16 +120,18 @@ export function MeetingCard({ meeting }: MeetingCardProps) {
       </Link>
 
       {/* Admin Actions */}
-      <div className="flex divide-x divide-slate-100 border-t border-slate-100">
-        <Link
-          href={`/meetings/${meeting.id}/edit`}
-          className="flex flex-1 items-center justify-center gap-1.5 px-4 py-3 text-xs sm:text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-navy-800"
-        >
-          <Pencil className="h-4 w-4" />
-          Edit
-        </Link>
-        <DeleteMeetingButton id={meeting.id} />
-      </div>
+      {canManage && (
+        <div className="flex divide-x divide-slate-100 border-t border-slate-100">
+          <Link
+            href={`/meetings/${meeting.id}/edit`}
+            className="flex flex-1 items-center justify-center gap-1.5 px-4 py-3 text-xs sm:text-sm font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-navy-800"
+          >
+            <Pencil className="h-4 w-4" />
+            Edit
+          </Link>
+          <DeleteMeetingButton id={meeting.id} />
+        </div>
+      )}
     </article>
   );
 }

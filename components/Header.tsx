@@ -1,8 +1,13 @@
 import Link from 'next/link';
-import { BookOpen, Calendar } from 'lucide-react';
+import { BookOpen, Calendar, LogIn } from 'lucide-react';
+import { auth } from '@/auth';
 import { NavLinks } from './NavLinks';
+import { SignOutButton } from './SignOutButton';
 
-export function Header() {
+export async function Header() {
+  const session = await auth();
+  const user = session?.user;
+
   const currentDate = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     month: 'long',
@@ -30,14 +35,33 @@ export function Header() {
               </div>
             </Link>
 
-            <p className="flex items-center gap-2 text-sm font-medium text-navy-200">
-              <Calendar className="h-4 w-4" />
-              <span>{currentDate}</span>
-            </p>
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <p className="flex items-center gap-2 text-sm font-medium text-navy-200">
+                <Calendar className="h-4 w-4" />
+                <span>{currentDate}</span>
+              </p>
+
+              {user ? (
+                <div className="flex items-center gap-3">
+                  <span className="text-sm text-navy-300">
+                    {user.name ?? user.email}
+                  </span>
+                  <SignOutButton />
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  className="inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-navy-200 ring-1 ring-navy-700 transition hover:bg-navy-800 hover:text-white"
+                >
+                  <LogIn className="h-4 w-4" />
+                  Sign In
+                </Link>
+              )}
+            </div>
           </div>
 
           {/* Primary Navigation */}
-          <NavLinks />
+          <NavLinks isSignedIn={!!user} />
         </div>
       </div>
     </header>

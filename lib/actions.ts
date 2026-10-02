@@ -3,6 +3,8 @@
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
+import { AuthError } from 'next-auth';
+import { auth, signIn } from '@/auth';
 import * as db from './meetings-db';
 import type { MeetingField, MeetingFormValues, SpeakerItem } from './types';
 
@@ -152,10 +154,39 @@ function validateMeetingForm(values: MeetingFormValues) {
   return { success: false as const, errors };
 }
 
+// Server Actions can be called directly over HTTP, so every mutation checks
+// for a signed-in session itself instead of relying on hidden UI.
+async function requireOwnerSession() {
+  const session = await auth();
+  if (!session?.user) throw new Error('Not authenticated');
+  return session;
+}
+
+export async function authenticate(
+  prevState: string | undefined,
+  formData: FormData
+) {
+  try {
+    await signIn('credentials', formData);
+  } catch (error) {
+    if (error instanceof AuthError) {
+      switch (error.type) {
+        case 'CredentialsSignin':
+          return 'Invalid email or password.';
+        default:
+          return 'Something went wrong.';
+      }
+    }
+    // Re-throw so Next.js can handle the success redirect.
+    throw error;
+  }
+}
+
 export async function createMeeting(
   prevState: State,
   formData: FormData
 ): Promise<State> {
+  await requireOwnerSession();
   const values = readFormValues(formData);
   const validated = validateMeetingForm(values);
 
@@ -186,6 +217,7 @@ export async function updateMeeting(
   prevState: State,
   formData: FormData
 ): Promise<State> {
+  await requireOwnerSession();
   const meetingId = MeetingIdSchema.parse(id);
   const values = readFormValues(formData);
   const validated = validateMeetingForm(values);
@@ -218,6 +250,7 @@ export async function updateMeeting(
 }
 
 export async function deleteMeeting(id: number) {
+  await requireOwnerSession();
   const meetingId = MeetingIdSchema.parse(id);
 
   try {
