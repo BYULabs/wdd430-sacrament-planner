@@ -1,14 +1,59 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { MeetingDetail } from '@/components/MeetingDetail';
 import type { SacramentMeeting } from '@/lib/types';
+import { getMeetingById } from '@/lib/meetings-db';
+import { baseOpenGraph } from '@/lib/site';
 import { headers } from 'next/headers';
 
 interface MeetingPageProps {
   params: Promise<{
     id: string;
   }>;
+}
+
+const meetingTypeLabels: Record<SacramentMeeting['meetingType'], string> = {
+  regular: 'Sacrament Meeting',
+  testimony: 'Fast & Testimony Meeting',
+  stake: 'Stake Conference Service',
+  general: 'General Conference Broadcast',
+};
+
+export async function generateMetadata({
+  params,
+}: MeetingPageProps): Promise<Metadata> {
+  const { id } = await params;
+  const meetingId = Number(id);
+  const meeting =
+    Number.isInteger(meetingId) && meetingId > 0
+      ? await getMeetingById(meetingId)
+      : null;
+
+  if (!meeting) {
+    return { title: 'Meeting Not Found' };
+  }
+
+  const formattedDate = new Date(`${meeting.date}T00:00:00`).toLocaleDateString(
+    'en-US',
+    { month: 'long', day: 'numeric', year: 'numeric' }
+  );
+  const title = `${meetingTypeLabels[meeting.meetingType]} · ${formattedDate}`;
+  const description = `Agenda for the ${formattedDate} ${meetingTypeLabels[meeting.meetingType].toLowerCase()}, presided by ${meeting.presiding} and conducted by ${meeting.conducting}.`;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/meetings/${meeting.id}` },
+    openGraph: {
+      ...baseOpenGraph,
+      type: 'article',
+      title: `${title} · Oakridge Ward Planner`,
+      description,
+      url: `/meetings/${meeting.id}`,
+    },
+  };
 }
 
 export default async function MeetingDetailPage({ params }: MeetingPageProps) {

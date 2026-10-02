@@ -1,9 +1,18 @@
 import type { Metadata } from 'next';
+import { baseOpenGraph } from '@/lib/site';
+
+const description =
+  'Browse, review, and print past and upcoming sacrament meeting agendas.';
 
 export const metadata: Metadata = {
-  title: 'Meetings Directory · Oakridge Ward Planner',
-  description:
-    'Browse, review, and print past and upcoming sacrament meeting agendas.',
+  title: 'Meetings Directory',
+  description,
+  openGraph: {
+    ...baseOpenGraph,
+    title: 'Meetings Directory · Oakridge Ward Planner',
+    description,
+    url: '/meetings',
+  },
 };
 
 export default function MeetingsLayout({

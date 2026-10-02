@@ -1,4 +1,6 @@
+import type { Metadata } from 'next';
 import Link from 'next/link';
+import { baseOpenGraph } from '@/lib/site';
 import {
   BookOpen,
   Layers,
@@ -8,6 +10,20 @@ import {
   Sparkles,
   CheckCircle2,
 } from 'lucide-react';
+
+const description =
+  'Learn how the Sacrament Meeting Planner helps ward bishoprics plan, manage, and print Sunday sacrament meeting agendas.';
+
+export const metadata: Metadata = {
+  title: 'About',
+  description,
+  openGraph: {
+    ...baseOpenGraph,
+    title: 'About · Oakridge Ward Planner',
+    description,
+    url: '/about',
+  },
+};
 
 export default function AboutPage() {
   return (

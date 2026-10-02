@@ -77,6 +77,11 @@ export async function getMeetingById(
   return (rows[0] as unknown as SacramentMeeting) ?? null;
 }
 
+export async function getAllMeetingIds(): Promise<number[]> {
+  const rows = await sql`SELECT id FROM meetings ORDER BY date ASC`;
+  return rows.map((row) => Number(row.id));
+}
+
 export async function addMeeting(
   data: Omit<SacramentMeeting, 'id'>
 ): Promise<SacramentMeeting> {

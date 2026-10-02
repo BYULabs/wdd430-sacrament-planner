@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import { LoginForm } from '@/components/LoginForm';
 
 export const metadata: Metadata = {
-  title: 'Sign In · Oakridge Ward Planner',
+  title: 'Sign In',
   description: 'Bishopric sign-in for managing sacrament meeting programs.',
+  robots: { index: false, follow: false },
 };
 
 export default async function LoginPage(props: {

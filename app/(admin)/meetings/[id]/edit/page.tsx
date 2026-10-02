@@ -1,7 +1,13 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { MeetingForm } from '@/components/MeetingForm';
 import { updateMeeting } from '@/lib/actions';
 import { getMeetingById } from '@/lib/meetings-db';
+
+export const metadata: Metadata = {
+  title: 'Edit Meeting',
+  description: 'Update an existing sacrament meeting program.',
+};
 
 export default async function EditMeetingPage(props: {
   params: Promise<{ id: string }>;
