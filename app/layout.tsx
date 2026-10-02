@@ -1,8 +1,9 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
+import { baseOpenGraph, siteUrl } from '@/lib/site';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -10,10 +11,25 @@ const inter = Inter({
   display: 'swap',
 });
 
+const description =
+  'Prepare, review, and print Sunday sacrament meeting agendas for the Oakridge Ward.';
+
 export const metadata: Metadata = {
-  title: 'Oakridge Ward · Sacrament Meeting Planner',
-  description:
-    'Prepare, review, and print Sunday sacrament meeting agendas for the Oakridge Ward.',
+  metadataBase: new URL(siteUrl),
+  title: {
+    template: '%s · Oakridge Ward Planner',
+    default: 'Oakridge Ward · Sacrament Meeting Planner',
+  },
+  description,
+  applicationName: 'Oakridge Ward Planner',
+  openGraph: baseOpenGraph,
+  twitter: {
+    card: 'summary_large_image',
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: '#fafaf9',
 };
 
 export default function RootLayout({
